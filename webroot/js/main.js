@@ -1,4 +1,4 @@
-(function() {
+(function () {
 
     enchant();
 
@@ -12,31 +12,41 @@
     // game.keybind('Z'.charCodeAt(0), 'shot');
     game.keybind(' '.charCodeAt(0), 'shot')
 
-    game.onload = function() {
+    game.onload = function () {
         game.rootScene.backgroundColor = '#7ecef4';
         let player = new Player(1, 200, 200);
         game.rootScene.addChild(player);
 
-        game.rootScene.addEventListener('enterframe', function() {
+        game.rootScene.addEventListener('enterframe', function () {
             player.move(game);
             player.animation();
         })
 
-        let projectile = new Projectile(player.id);
-        player.projectile = projectile;
-        game.rootScene.addChild(projectile);
+        game.rootScene.addEventListener('shotbuttondown', function() {
+            player.shot();
+        })
+
+        let projectiles = []
+        for (let i = 0; i < 1; ++i) {
+            let _projectile = new Projectile(player.id);
+            game.rootScene.addChild(_projectile);
+            projectiles.push(_projectile);
+        }
+
+        player.projectiles = projectiles;
+
 
     }
 
     game.start();
-    
+
 
 
 
 
 
     const Player = Class.create(Sprite, {
-        initialize: function(_id, _x, _y) {
+        initialize: function (_id, _x, _y) {
             Sprite.call(this, 32, 32);
             this.image = game.assets['./img/chara1.png'];
             this.x = _x;
@@ -48,10 +58,10 @@
             this.vx = 0;
             this.vy = 0;
             this.direction = 1;
-            this.projectile = null;
+            this.projectiles = [];
 
-            this.animation = function() {
-                
+            this.animation = function () {
+
                 if (this.frame > 1) {
                     this.frame = 0
                 } else {
@@ -59,7 +69,14 @@
                 }
             }
 
-            this.move = function(_game) {
+            this.shot = function() {
+                let _projectile = this.projectiles.find(function (p_) { return !p_.visible })
+                if (_projectile) {
+                    _projectile.launch(this.x + 16, this.y + 16, this.direction);
+                }
+            }
+
+            this.move = function (_game) {
                 this.vx = 0;
                 if (_game.input.right) {
                     this.vx += this.speed;
@@ -81,16 +98,12 @@
                     this.x += this.vx;
                 }
 
-                if (_game.input.shot && this.projectile) {
-                    this.projectile.launch(this.x + 16, this.y + 16, this.direction);
-                }
-
                 if (!this.isJump && _game.input.up) {
                     this.isJump = true;
                     this.vy = -10;
                 }
                 if (this.isJump) {
-                    
+
                     if (this.vy && _game.floorHeight <= this.y + this.vy) {
                         this.y = _game.floorHeight;
                         this.isJump = false;
@@ -108,7 +121,7 @@
     });
 
     const Projectile = Class.create(Sprite, {
-        initialize: function(_playerId) {
+        initialize: function (_playerId) {
             Sprite.call(this, 16, 16);
             this.image = game.assets['./img/icon1.png'];
             this.visible = false;
@@ -120,7 +133,7 @@
             this.ttl = 0;
             this.direction = 1;
 
-            this.launch = function(_x, _y, _direction){
+            this.launch = function (_x, _y, _direction) {
                 if (this.visible) {
                     return;
                 }
@@ -132,8 +145,8 @@
                 this.visible = true;
             }
 
-            this.addEventListener('enterframe', function() {
-                if(this.visible) {
+            this.addEventListener('enterframe', function () {
+                if (this.visible) {
                     this.x += this.speed * this.direction;
                     --this.ttl;
                     if (this.ttl < 0) {
