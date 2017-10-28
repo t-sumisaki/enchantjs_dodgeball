@@ -44,7 +44,9 @@
     }
     game.restart = function () {
         console.log('call::restart')
-        game.popScene();
+        while(this.currentScene != this.rootScene) {
+            game.popScene();
+        }
 
         let startScene = new StartScene(game);
         game.pushScene(startScene);
@@ -100,9 +102,6 @@
             Scene.call(this);
             _game.ingame = true;
 
-            let label = new Label('game');
-            this.addChild(label);
-
             let players = new Group();
             this.addChild(players);
 
@@ -112,11 +111,11 @@
 
 
             for (let i = 0, _p; _p = _players[i]; ++i) {
-                let player = new Player(_p, 100 * (i + 1), 100);
+                let player = new Player(_p, 100 * (i + 1), 100, i);
 
                 player.commands.push(new ShotCommand(player, projectiles))
                 if (_p === _game.playerId) {
-                    player.commands.push(new InputCommand(player));
+                    player.commands.push(new InputMoveCommand(player));
                     player.commands.push(new ApplyCommand(player));
                 }
 
@@ -142,6 +141,8 @@
                     for (let _player of players.childNodes) {
                         if (_projectile.isIntersect(_player)) {
                             _player.onApplyDamage(_projectile)
+                            _projectile.setActive(false);
+                            break;
                         }
                     }
                 }
@@ -150,7 +151,7 @@
                 for (let _player of players.childNodes) {
                     if (_player.isDead) {
                         let resultScene = new ResultScene(_game, _player.playerId !== _game.playerId);
-                        _game.replaceScene(resultScene);
+                        _game.pushScene(resultScene);
                     }
                 }
             })
@@ -180,12 +181,13 @@
 
 
     const Player = Class.create(Sprite, {
-        initialize: function (_id, _x, _y) {
+        initialize: function (_id, _x, _y, pNum = 0) {
             Sprite.call(this, 32, 32);
             this.image = game.assets['./img/chara1.png'];
             this.x = _x;
             this.y = _y;
-            this.frame = 0;
+            this.animOffset = pNum * 5;
+            this.frame = this.animOffset;
             this.playerId = _id;
             this.speed = 3;
             this.isJump = false;
@@ -208,11 +210,11 @@
 
             this.animation = function () {
                 if (this.isDead) {
-                    this.frame = 3;
+                    this.frame = this.animOffset + 3;
                     return;
                 }
-                if (this.frame > 1) {
-                    this.frame = 0
+                else if (this.frame > this.animOffset + 1)  {
+                    this.frame = this.animOffset + 0
                 } else {
                     ++this.frame;
                 }
@@ -288,7 +290,7 @@
         }
     }
 
-    const InputCommand = function (_target) {
+    const InputMoveCommand = function (_target) {
 
         // init
         _target.vx = _target.vx || 0;
@@ -361,8 +363,8 @@
             this.direction = 1;
 
             let _collision = new Sprite(16, 16);
-            _collision.backgroundColor = 'blue';
-            _collision.opacity = 0.3;
+            //_collision.backgroundColor = 'blue';
+            //_collision.opacity = 0.3;
             _collision.visible = false;
             this.addChild(_collision);
 
@@ -409,33 +411,7 @@
                     }
                 }
             }
-
-            /*
-            this.addEventListener('enterframe', function () {
-                if (this.isActive) {
-                    this.x += this.speed * this.direction;
-                    // for (let _p of players) {
-                    //     if (this.isIntersect(_p)) {
-                    //         _collision.backgroundColor = 'red';
-                    //         if (_p.onHit) {
-                    //             _p.onHit(this);
-
-                    //         }
-                    //     } else {
-                    //         _collision.backgroundColor = 'blue';
-                    //     }
-                    // }
-
-                    // 生存時間の更新
-                    --this.ttl;
-                    if (this.ttl < 0) {
-                        this.setActive(false);
-                    }
-                }
-            })*/
         }
     });
-
-
 
 })();

@@ -4,14 +4,17 @@ const http = require('http').Server(app);
 const path = require('path')
 const io = require('socket.io')(http);
 
-
+// リソースの配布設定
 app.use(express.static(path.resolve(__dirname, 'webroot')));
 
+// プレイヤーIDシーケンサー
 let id = 0;
+// プレイ中のプレイヤー格納変数（今回はグローバル）
 let players = []
 
 io.on('connection', (socket) => {
 
+    // socketごとにIDを発行
     let _id = ++id;
     console.log('connected.', _id);
 
@@ -52,13 +55,6 @@ io.on('connection', (socket) => {
         }
         socket.broadcast.emit('leavegame');
     })
-
-    /*
-    socket.on('checkuser', function () {
-        console.log('receive: checkuser', players);
-        socket.emit('checkuser', players);
-    })
-    */
 
     // 接続が切れた場合
     socket.on('disconnect', function () {
