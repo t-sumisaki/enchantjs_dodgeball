@@ -21,26 +21,57 @@ io.on('connection', (socket) => {
             id: _id
         })
     })
-    
-    socket.on('checkuser', function() {
-        console.log('receive: checkuser', players);
-        socket.emit('checkuser', players);
+    socket.on('joingame', () => {
+        if (players.length < 2) {
+            console.log('joingame', _id);
+            players.push({
+                id: _id,
+                socket: socket
+            })
+
+            // 規定数に達したら全員に通達
+            if (players.length == 2) {
+                let _players = players.map(_p => _p.id);
+                for (let _p of players) {
+                    _p.socket.emit('startgame', _players);
+                }
+            }
+        } else {
+            // 規定数より多い場合
+            console.log('too many player...', _id);
+            socket.emit('notjoingame');
+        }
+        console.log(`[debug]players=${players}`)
     })
-
-    players.push(_id)
-
-    socket.on('disconnect', function() {
-        console.log('disconnect:', _id);
-
-        let index = players.indexOf(_id);
+    // 部屋から退出した場合
+    socket.on('leavegame', () => {
+        console.log('leavegame', _id);
+        let index = players.findIndex((_p) => _p.id == _id);
         if (index > -1) {
             players.splice(index, 1);
         }
+        socket.broadcast.emit('leavegame');
+    })
 
+    /*
+    socket.on('checkuser', function () {
+        console.log('receive: checkuser', players);
+        socket.emit('checkuser', players);
+    })
+    */
+
+    // 接続が切れた場合
+    socket.on('disconnect', function () {
+        console.log('disconnect:', _id);
+
+        let index = players.findIndex((_p) => _p.id == _id);
+        if (index > -1) {
+            players.splice(index, 1);
+        }
         socket.broadcast.emit('disconnected');
     })
 
-    socket.on('sync', function(data) {
+    socket.on('sync', function (data) {
         socket.broadcast.emit('sync', data)
     })
 })
